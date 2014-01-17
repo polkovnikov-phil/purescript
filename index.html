@@ -56,6 +56,7 @@
 <li>Rank N Types</li>
 <li>Do Notation</li>
 <li>Optional tail-call elimination</li>
+<li>Type Classes</li>
 </ul><h2>
 <a name="try-it" class="anchor" href="#try-it"><span class="octicon octicon-link"></span></a>Try It!</h2>
 
@@ -601,20 +602,20 @@
 
 <div class="highlight highlight-haskell"><pre><span class="kr">data</span> <span class="kt">Maybe</span> <span class="n">a</span> <span class="ow">=</span> <span class="kt">Nothing</span> <span class="o">|</span> <span class="kt">Just</span> <span class="n">a</span>
 
-<span class="nf">bindMaybe</span> <span class="kt">Nothing</span> <span class="kr">_</span> <span class="ow">=</span> <span class="kt">Nothing</span>
-<span class="nf">bindMaybe</span> <span class="p">(</span><span class="kt">Just</span> <span class="n">a</span><span class="p">)</span> <span class="n">f</span> <span class="ow">=</span> <span class="n">f</span> <span class="n">a</span>
-
-<span class="nf">maybe</span> <span class="ow">=</span> <span class="p">{</span> <span class="n">ret</span><span class="kt">:</span> <span class="kt">Just</span><span class="p">,</span> <span class="n">bind</span><span class="kt">:</span> <span class="n">bindMaybe</span> <span class="p">}</span>
+<span class="kr">instance</span> <span class="kt">Monad</span> <span class="kt">Maybe</span> <span class="kr">where</span>
+  <span class="n">ret</span> <span class="ow">=</span> <span class="kt">Just</span>
+  <span class="p">(</span><span class="o">&gt;&gt;=</span><span class="p">)</span> <span class="kt">Nothing</span> <span class="kr">_</span> <span class="ow">=</span> <span class="kt">Nothing</span>
+  <span class="p">(</span><span class="o">&gt;&gt;=</span><span class="p">)</span> <span class="p">(</span><span class="kt">Just</span> <span class="n">a</span><span class="p">)</span> <span class="n">f</span> <span class="ow">=</span> <span class="n">f</span> <span class="n">a</span>
 
 <span class="nf">isEven</span> <span class="n">n</span> <span class="o">|</span> <span class="n">n</span> <span class="o">%</span> <span class="mi">2</span> <span class="o">==</span> <span class="mi">0</span> <span class="ow">=</span> <span class="kt">Just</span> <span class="p">{}</span>
 <span class="nf">isEven</span> <span class="kr">_</span> <span class="ow">=</span> <span class="kt">Nothing</span>
 
-<span class="nf">evenSum</span> <span class="n">a</span> <span class="n">b</span> <span class="ow">=</span> <span class="n">maybe</span> <span class="kr">do</span>
+<span class="nf">evenSum</span> <span class="n">a</span> <span class="n">b</span> <span class="ow">=</span> <span class="kr">do</span>
   <span class="n">n</span> <span class="ow">&lt;-</span> <span class="n">a</span>
   <span class="n">m</span> <span class="ow">&lt;-</span> <span class="n">b</span>
   <span class="kr">let</span> <span class="n">sum</span> <span class="ow">=</span> <span class="n">n</span> <span class="o">+</span> <span class="n">m</span>
   <span class="n">isEven</span> <span class="n">sum</span>
-  <span class="n">return</span> <span class="n">sum</span>
+  <span class="n">ret</span> <span class="n">sum</span>
 </pre></div>
 
 <p><code>isEven</code> adds two values of type <code>Maybe Number</code> and returns their sum, if the sum is even. If the sum is odd, <code>evenSum</code> returns <code>Nothing</code>.</p>
@@ -622,7 +623,7 @@
 <p>This example illustrates the following aspects of <code>do</code> notation:</p>
 
 <ul>
-<li>The <code>do</code> keyword is preceded by a value <code>m</code> which is a record. The record must contain fields <code>ret</code> and <code>bind</code> which determine the monad which will be used in the computation.</li>
+<li>The corresponding type constructor must be an instance of the <code>Prelude.Monad</code> type class, which defines the <code>ret</code> and <code>&gt;&gt;=</code> functions.</li>
 <li>Statements can have the following form:
 
 <ul>
@@ -631,17 +632,14 @@
 <li>
 <code>let a = x</code> which desugars to <code>(\a -&gt; ...)(x)</code> </li>
 <li>
-<code>return a</code> which desugars to <code>m.ret a</code>
-</li>
-<li>
 <code>x</code> which desugars to <code>m.bind x (\_ -&gt; ...)</code> or just <code>x</code> if this is the last statement.</li>
 </ul>
 </li>
 </ul><p>Not illustrated here, but equally valid is the use of a binder on the left hand side of <code>&lt;-</code> or <code>=</code>. For example:</p>
 
-<div class="highlight highlight-haskell"><pre><span class="nf">test</span> <span class="n">arr</span> <span class="ow">=</span> <span class="n">maybe</span> <span class="kr">do</span>
+<div class="highlight highlight-haskell"><pre><span class="nf">test</span> <span class="n">arr</span> <span class="ow">=</span> <span class="kr">do</span>
   <span class="p">(</span><span class="n">x</span><span class="kt">:</span><span class="n">y</span><span class="kt">:</span><span class="kr">_</span><span class="p">)</span> <span class="ow">&lt;-</span> <span class="n">arr</span>
-  <span class="n">return</span> <span class="n">x</span> <span class="o">+</span> <span class="n">y</span>
+  <span class="n">ret</span> <span class="p">(</span><span class="n">x</span> <span class="o">+</span> <span class="n">y</span><span class="p">)</span>
 </pre></div>
 
 <p>A pattern match failure will generate a runtime exception, just as in the case of a regular <code>case</code> statement.</p>
@@ -907,6 +905,30 @@ bar = A.B.bar
 <p>To alias a name of a field defined on a Javascript type to a PureScript function, use <code>foreign import member</code>. For example, to define a function <code>length</code> which accesses the <code>length</code> member of an array:</p>
 
 <div class="highlight highlight-haskell"><pre><span class="nf">foreign</span> <span class="kr">import</span> <span class="nn">member</span> <span class="s">"length"</span> <span class="n">length</span> <span class="ow">::</span> <span class="n">forall</span> <span class="n">a</span><span class="o">.</span> <span class="p">[</span><span class="n">a</span><span class="p">]</span> <span class="ow">-&gt;</span> <span class="kt">Number</span>
+</pre></div>
+
+<h2>
+<a name="type-classes" class="anchor" href="#type-classes"><span class="octicon octicon-link"></span></a>Type Classes</h2>
+
+<p>PureScript has basic support for type classes via the <code>class</code> and <code>instance</code> keywords. </p>
+
+<div class="highlight highlight-haskell"><pre><span class="kr">class</span> <span class="kt">Show</span> <span class="n">a</span> <span class="kr">where</span>
+  <span class="n">show</span> <span class="ow">::</span> <span class="n">a</span> <span class="ow">-&gt;</span> <span class="kt">String</span>
+
+<span class="kr">instance</span> <span class="kt">Show</span> <span class="kt">String</span> <span class="kr">where</span>
+  <span class="n">show</span> <span class="n">s</span> <span class="ow">=</span> <span class="n">s</span>
+
+<span class="kr">instance</span> <span class="kt">Show</span> <span class="kt">Boolean</span> <span class="kr">where</span>
+  <span class="n">show</span> <span class="n">true</span> <span class="ow">=</span> <span class="s">"true"</span>
+  <span class="n">show</span> <span class="n">false</span> <span class="ow">=</span> <span class="s">"false"</span>
+
+<span class="kr">instance</span> <span class="p">(</span><span class="kt">Show</span> <span class="n">a</span><span class="p">)</span> <span class="ow">=&gt;</span> <span class="kt">Show</span> <span class="p">[</span><span class="n">a</span><span class="p">]</span> <span class="kr">where</span>
+  <span class="n">show</span> <span class="n">arr</span> <span class="ow">=</span> <span class="s">"["</span> <span class="o">++</span> <span class="n">showArray</span> <span class="n">arr</span> <span class="o">++</span> <span class="s">"]"</span>
+
+<span class="nf">showArray</span> <span class="ow">::</span> <span class="n">forall</span> <span class="n">a</span><span class="o">.</span> <span class="p">(</span><span class="kt">Show</span> <span class="n">a</span><span class="p">)</span> <span class="ow">=&gt;</span> <span class="p">[</span><span class="n">a</span><span class="p">]</span> <span class="ow">-&gt;</span> <span class="kt">String</span>
+<span class="nf">showArray</span> <span class="kt">[]</span> <span class="ow">=</span> <span class="s">""</span>
+<span class="nf">showArray</span> <span class="p">[</span><span class="n">x</span><span class="p">]</span> <span class="ow">=</span> <span class="n">show</span> <span class="n">x</span>
+<span class="nf">showArray</span> <span class="p">(</span><span class="n">x</span><span class="kt">:</span><span class="n">xs</span><span class="p">)</span> <span class="ow">=</span> <span class="n">show</span> <span class="n">x</span> <span class="o">++</span> <span class="s">", "</span> <span class="o">++</span> <span class="n">showArray</span> <span class="n">xs</span>
 </pre></div>
       </section>
     </div>
