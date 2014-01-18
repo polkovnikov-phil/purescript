@@ -72,9 +72,10 @@
 
 <p>Contributions are always encouraged! Please see <code>CONTRIBUTING.md</code> for guidelines.</p>
 
-<p>Join the discussion on FreeNode at <a>#purescript</a>.</p>
-
-<h2>
+<ul>
+<li>Join the discussion on FreeNode at <a>#purescript</a>.</li>
+<li>Follow @purescript on Twitter for development updates</li>
+</ul><h2>
 <a name="installation" class="anchor" href="#installation"><span class="octicon octicon-link"></span></a>Installation</h2>
 
 <p>Install the Haskell Plaform, then <code>cabal install</code></p>
@@ -135,21 +136,24 @@
 
 <div class="highlight highlight-haskell"><pre><span class="kr">module</span> <span class="nn">Main</span> <span class="kr">where</span>
 
-<span class="nf">foreign</span> <span class="kr">import</span> <span class="nn">console</span> <span class="ow">::</span> <span class="p">{</span> <span class="n">log</span> <span class="ow">::</span> <span class="kt">String</span> <span class="ow">-&gt;</span> <span class="p">{}</span> <span class="p">}</span>
+<span class="kr">import</span> <span class="nn">Trace</span>
 
-<span class="nf">main</span> <span class="ow">=</span> <span class="nf">\</span> <span class="ow">-&gt;</span> <span class="n">console</span><span class="o">.</span><span class="n">log</span> <span class="s">"Hello, World!"</span>
+<span class="nf">main</span> <span class="ow">=</span> <span class="n">trace</span> <span class="s">"Hello, World!"</span>
 </pre></div>
 
-<p>which compiles to the following Javascript:</p>
+<p>which compiles to the following Javascript, ignoring the Prelude:</p>
 
-<div class="highlight highlight-javascript"><pre><span class="kd">var</span> <span class="nx">Main</span><span class="p">;</span> 
+<div class="highlight highlight-javascript"><pre><span class="kd">var</span> <span class="nx">Main</span><span class="p">;</span>
 <span class="p">(</span><span class="kd">function</span> <span class="p">(</span><span class="nx">Main</span><span class="p">)</span> <span class="p">{</span>
-    <span class="kd">function</span> <span class="nx">main</span><span class="p">()</span> <span class="p">{</span>
-        <span class="k">return</span> <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s2">"Hello, World!"</span><span class="p">);</span> 
-    <span class="p">};</span> 
-    <span class="nx">Main</span><span class="p">.</span><span class="nx">main</span> <span class="o">=</span> <span class="nx">main</span><span class="p">;</span> 
+    <span class="kd">var</span> <span class="nx">main</span> <span class="o">=</span> <span class="nx">trace</span><span class="p">(</span><span class="s2">"Hello, World!"</span><span class="p">);</span>
+    <span class="nx">Main</span><span class="p">.</span><span class="nx">main</span> <span class="o">=</span> <span class="nx">main</span><span class="p">;</span>
 <span class="p">})(</span><span class="nx">Main</span> <span class="o">=</span> <span class="nx">Main</span> <span class="o">||</span> <span class="p">{});</span>
 </pre></div>
+
+<p>The following command will compile and execute the PureScript code above:</p>
+
+<pre><code>psc input.purs --run-main | nodejs
+</code></pre>
 
 <h2>
 <a name="another-example" class="anchor" href="#another-example"><span class="octicon octicon-link"></span></a>Another Example</h2>
@@ -912,6 +916,10 @@ bar = A.B.bar
 
 <p>PureScript has basic support for type classes via the <code>class</code> and <code>instance</code> keywords. </p>
 
+<p>Type class instances must be of the form <code>String</code>, <code>Number</code>, <code>Boolean</code>, <code>[t]</code> or <code>C t1 ... tn</code>, and only a single type class parameter is supported.</p>
+
+<p>Type class instances are resolved based on the order in which they appeared in the source files. In particular, overlapping instances are permitted.</p>
+
 <div class="highlight highlight-haskell"><pre><span class="kr">class</span> <span class="kt">Show</span> <span class="n">a</span> <span class="kr">where</span>
   <span class="n">show</span> <span class="ow">::</span> <span class="n">a</span> <span class="ow">-&gt;</span> <span class="kt">String</span>
 
@@ -929,6 +937,8 @@ bar = A.B.bar
 <span class="nf">showArray</span> <span class="kt">[]</span> <span class="ow">=</span> <span class="s">""</span>
 <span class="nf">showArray</span> <span class="p">[</span><span class="n">x</span><span class="p">]</span> <span class="ow">=</span> <span class="n">show</span> <span class="n">x</span>
 <span class="nf">showArray</span> <span class="p">(</span><span class="n">x</span><span class="kt">:</span><span class="n">xs</span><span class="p">)</span> <span class="ow">=</span> <span class="n">show</span> <span class="n">x</span> <span class="o">++</span> <span class="s">", "</span> <span class="o">++</span> <span class="n">showArray</span> <span class="n">xs</span>
+
+<span class="nf">example</span> <span class="ow">=</span> <span class="n">show</span> <span class="p">[</span><span class="n">true</span><span class="p">,</span> <span class="n">false</span><span class="p">]</span>
 </pre></div>
       </section>
     </div>
