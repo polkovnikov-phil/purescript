@@ -24,9 +24,11 @@ import Language.PureScript.Sugar.CaseDeclarations as S
 import Language.PureScript.Sugar.TypeDeclarations as S
 import Language.PureScript.Sugar.BindingGroups as S
 import Language.PureScript.Sugar.TypeClasses as S
+import Language.PureScript.Sugar.Imports as S
 
 desugar :: [Module] -> Either String [Module]
-desugar = desugarTypeClasses
+desugar = qualifyAll
+          >=> desugarTypeClasses
           >=> rebracket
           >=> desugarDo
           >=> desugarCasesModule

@@ -31,20 +31,20 @@ import Language.PureScript.Values
 import Language.PureScript.Types
 
 createBindingGroupsModule :: [Module] -> Either String [Module]
-createBindingGroupsModule = mapM $ \(Module name ds) -> Module name <$> createBindingGroups ds
+createBindingGroupsModule = mapM $ \(Module name ds) -> Module name <$> createBindingGroups (ModuleName name) ds
 
 collapseBindingGroupsModule :: [Module] -> [Module]
 collapseBindingGroupsModule = map $ \(Module name ds) -> Module name (collapseBindingGroups ds)
 
-createBindingGroups :: [Declaration] -> Either String [Declaration]
-createBindingGroups ds = do
+createBindingGroups :: ModuleName -> [Declaration] -> Either String [Declaration]
+createBindingGroups mname ds = do
   let values = filter isValueDecl ds
       dataDecls = filter isDataDecl ds
       allProperNames = map getProperName dataDecls
-      dataVerts = map (\d -> (d, getProperName d, usedProperNames d `intersect` allProperNames)) dataDecls
+      dataVerts = map (\d -> (d, getProperName d, usedProperNames mname d `intersect` allProperNames)) dataDecls
   dataBindingGroupDecls <- mapM toDataBindingGroup $ stronglyConnComp dataVerts
   let allIdents = map getIdent values
-      valueVerts = map (\d -> (d, getIdent d, usedIdents d `intersect` allIdents)) values
+      valueVerts = map (\d -> (d, getIdent d, usedIdents mname d `intersect` allIdents)) values
       bindingGroupDecls = map toBindingGroup $ stronglyConnComp valueVerts
   return $ filter isImportDecl ds ++
            filter isExternDataDecl ds ++
@@ -61,17 +61,19 @@ collapseBindingGroups ds = concatMap go ds
   go (BindingGroupDeclaration ds) = map (\(ident, val) -> ValueDeclaration ident [] Nothing val) ds
   go other = [other]
 
-usedIdents :: (Data d) => d -> [Ident]
-usedIdents = nub . everything (++) (mkQ [] names)
+usedIdents :: (Data d) => ModuleName -> d -> [Ident]
+usedIdents mname = nub . everything (++) (mkQ [] names)
   where
   names :: Value -> [Ident]
+  names (Var (Qualified (Just mname') name)) | mname == mname' = [name]
   names (Var (Qualified Nothing name)) = [name]
   names _ = []
 
-usedProperNames :: (Data d) => d -> [ProperName]
-usedProperNames = nub . everything (++) (mkQ [] names)
+usedProperNames :: (Data d) => ModuleName -> d -> [ProperName]
+usedProperNames mname = nub . everything (++) (mkQ [] names)
   where
   names :: Type -> [ProperName]
+  names (TypeConstructor (Qualified (Just mname') name)) | mname == mname' = [name]
   names (TypeConstructor (Qualified Nothing name)) = [name]
   names _ = []
 
